@@ -5,12 +5,41 @@
 #include "snake.h"
 #include "game.h"
 
-void changeDirection(Snake *snake, char key) {
-    switch(key) {
-        case 'w': if (snake->direction != 'D') snake->direction = 'U'; break;
-        case 's': if (snake->direction != 'U') snake->direction = 'D'; break;
-        case 'a': if (snake->direction != 'R') snake->direction = 'L'; break;
-        case 'd': if (snake->direction != 'L') snake->direction = 'R'; break;
+void hideCursor() {
+    HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO cursorInfo;
+    GetConsoleCursorInfo(console, &cursorInfo);
+    cursorInfo.bVisible = FALSE; // hide cursor
+    SetConsoleCursorInfo(console, &cursorInfo);
+}
+
+// Move cursor to x,y in console
+void gotoxy(int x, int y) {
+    COORD coord = {x, y};
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+}
+
+// Change snake direction based on key input (arrow keys + WASD)
+void changeDirection(Snake *snake) {
+    if (!kbhit()) return;
+
+    int ch = getch();
+
+    if (ch == 0 || ch == 224) { // arrow keys
+        ch = getch();
+        switch (ch) {
+            case 72: if (snake->direction != 'D') snake->direction = 'U'; break; // up
+            case 80: if (snake->direction != 'U') snake->direction = 'D'; break; // down
+            case 75: if (snake->direction != 'R') snake->direction = 'L'; break; // left
+            case 77: if (snake->direction != 'L') snake->direction = 'R'; break; // right
+        }
+    } else { // WASD keys
+        switch (ch) {
+            case 'w': if (snake->direction != 'D') snake->direction = 'U'; break;
+            case 's': if (snake->direction != 'U') snake->direction = 'D'; break;
+            case 'a': if (snake->direction != 'R') snake->direction = 'L'; break;
+            case 'd': if (snake->direction != 'L') snake->direction = 'R'; break;
+        }
     }
 }
 
@@ -19,13 +48,15 @@ int main() {
     Fruit fruit;
     int score = 0;
 
+    hideCursor();  
     initGame(&snake, &fruit);
 
+    // Clear screen once and move cursor to top-left
+    system("cls");
+    gotoxy(0, 0);
+
     while (1) {
-        if (kbhit()) {
-            char ch = getch();
-            changeDirection(&snake, ch);
-        }
+        changeDirection(&snake);  // read input
 
         moveSnake(&snake);
 
@@ -36,11 +67,14 @@ int main() {
             score += 10;
         }
 
-        system("cls");
+        // Redraw board without clearing screen
+        gotoxy(0, 0);  // move cursor to top-left
         printf("Score: %d\n", score);
         drawBoard(&snake, &fruit);
 
+        // Check collision
         if (checkCollision(&snake)) {
+            gotoxy(0, HEIGHT + 2); // move cursor below board
             printf("Game Over! Final Score: %d\n", score);
             break;
         }
