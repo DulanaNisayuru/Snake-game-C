@@ -27,7 +27,6 @@ Control the snake, eat the fruit, grow longer, and avoid crashing into walls or 
 **Mid-game / Eating Fruit:**  
 ![Mid Game](screenshots/midgame.png)  
 
-> Replace `screenshots/start.png` and `screenshots/midgame.png` with your actual images.
 
 ---
 
