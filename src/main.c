@@ -13,13 +13,12 @@ void hideCursor() {
     SetConsoleCursorInfo(console, &cursorInfo);
 }
 
-// Move cursor to x,y in console
+
 void gotoxy(int x, int y) {
     COORD coord = {x, y};
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 }
 
-// Change snake direction based on key input (arrow keys + WASD)
 void changeDirection(Snake *snake) {
     if (!kbhit()) return;
 
@@ -28,12 +27,12 @@ void changeDirection(Snake *snake) {
     if (ch == 0 || ch == 224) { // arrow keys
         ch = getch();
         switch (ch) {
-            case 72: if (snake->direction != 'D') snake->direction = 'U'; break; // up
-            case 80: if (snake->direction != 'U') snake->direction = 'D'; break; // down
-            case 75: if (snake->direction != 'R') snake->direction = 'L'; break; // left
-            case 77: if (snake->direction != 'L') snake->direction = 'R'; break; // right
+            case 72: if (snake->direction != 'D') snake->direction = 'U'; break;
+            case 80: if (snake->direction != 'U') snake->direction = 'D'; break;
+            case 75: if (snake->direction != 'R') snake->direction = 'L'; break;
+            case 77: if (snake->direction != 'L') snake->direction = 'R'; break;
         }
-    } else { // WASD keys
+    } else { // WASD
         switch (ch) {
             case 'w': if (snake->direction != 'D') snake->direction = 'U'; break;
             case 's': if (snake->direction != 'U') snake->direction = 'D'; break;
@@ -46,18 +45,20 @@ void changeDirection(Snake *snake) {
 int main() {
     Snake snake;
     Fruit fruit;
+    Obstacle obstacles[MAX_OBSTACLES];
     int score = 0;
+    int gameOver = 0;
+    int obstacleCount = 5;
 
-    hideCursor();  
+    hideCursor();
     initGame(&snake, &fruit);
+    initObstacles(obstacles, obstacleCount);
 
-    // Clear screen once and move cursor to top-left
     system("cls");
     gotoxy(0, 0);
 
-    while (1) {
-        changeDirection(&snake);  // read input
-
+    while (!gameOver) {
+        changeDirection(&snake);
         moveSnake(&snake);
 
         // Check if fruit eaten
@@ -65,21 +66,25 @@ int main() {
             growSnake(&snake);
             generateFruit(&fruit, &snake);
             score += 10;
+
+            // Add new obstacle every 30 points
+            if (score % 30 == 0 && obstacleCount < MAX_OBSTACLES) {
+                initObstacles(&obstacles[obstacleCount], 1);
+                obstacleCount++;
+            }
         }
 
-        // Redraw board without clearing screen
-        gotoxy(0, 0);  // move cursor to top-left
+        gotoxy(0, 0);
         printf("Score: %d\n", score);
-        drawBoard(&snake, &fruit);
+        drawBoard(&snake, &fruit, obstacles, obstacleCount);
 
-        // Check collision
-        if (checkCollision(&snake)) {
-            gotoxy(0, HEIGHT + 2); // move cursor below board
+        if (checkCollision(&snake) || checkObstacleCollision(&snake, obstacles, obstacleCount)) {
+            gotoxy(0, HEIGHT + 2);
             printf("Game Over! Final Score: %d\n", score);
-            break;
+            gameOver = 1;
         }
 
-        Sleep(150); // delay in ms
+        Sleep(250);
     }
 
     return 0;

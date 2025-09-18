@@ -2,6 +2,18 @@
 #include <stdlib.h>
 #include <time.h>
 #include "game.h"
+#include <windows.h>
+
+void setColor(int color) {
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+}
+
+void initObstacles(Obstacle obstacles[], int count) {
+    for (int i = 0; i < count; i++) {
+        obstacles[i].x = rand() % WIDTH;
+        obstacles[i].y = rand() % HEIGHT;
+    }
+}
 
 void initGame(Snake *snake, Fruit *fruit) {
     initSnake(snake);
@@ -9,34 +21,73 @@ void initGame(Snake *snake, Fruit *fruit) {
     generateFruit(fruit, snake);
 }
 
-void drawBoard(Snake *snake, Fruit *fruit) {
-    for (int y = 0; y < HEIGHT; y++) {
-        for (int x = 0; x < WIDTH; x++) {
-            int printed = 0;
-            if (x == 0 || x == WIDTH-1 || y == 0 || y == HEIGHT-1) {
-                printf("#"); // wall
-                printed = 1;
-            } else if (x == fruit->x && y == fruit->y) {
-                printf("*"); // fruit
-                printed = 1;
-            } else {
-                for (int i = 0; i < snake->length; i++) {
-                    if (x == snake->x[i] && y == snake->y[i]) {
-                        printf(i == 0 ? "O" : "o"); // head vs body
-                        printed = 1;
-                    }
-                }
-            }
-            if (!printed) printf(" ");
+int checkObstacleCollision(Snake *snake, Obstacle obstacles[], int count) {
+    for (int i = 0; i < count; i++) {
+        if (snake->x[0] == obstacles[i].x && snake->y[0] == obstacles[i].y) {
+            return 1; // collision
         }
-        printf("\n");
     }
+    return 0;
 }
 
+void drawBoard(Snake *snake, Fruit *fruit, Obstacle obstacles[], int obstacleCount) {
+    // Draw top border
+    for (int x = 0; x < WIDTH + 2; x++) {
+        printf("#");
+    }
+    printf("\n");
+
+    for (int y = 0; y < HEIGHT; y++) {
+        printf("#"); // Left border
+        for (int x = 0; x < WIDTH; x++) {
+            int printed = 0;
+
+            // Fruit
+            if (x == fruit->x && y == fruit->y) {
+                setColor(10); // Green
+                printf("F");
+                setColor(7);
+                printed = 1;
+            }
+
+            // Snake
+            for (int i = 0; i < snake->length; i++) {
+                if (snake->x[i] == x && snake->y[i] == y) {
+                    setColor(14); // Yellow
+                    printf("O");
+                    setColor(7);
+                    printed = 1;
+                }
+            }
+
+            // Obstacles
+            for (int i = 0; i < obstacleCount; i++) {
+                if (obstacles[i].x == x && obstacles[i].y == y) {
+                    setColor(12); // Red
+                    printf("X");
+                    setColor(7);
+                    printed = 1;
+                }
+            }
+
+            if (!printed) printf(" ");
+        }
+        printf("#\n"); // Right border
+    }
+
+    // Draw bottom border
+    for (int x = 0; x < WIDTH + 2; x++) {
+        printf("#");
+    }
+    printf("\n");
+}
+
+
 int checkCollision(Snake *snake) {
-    // Wall collision
-    if (snake->x[0] <= 0 || snake->x[0] >= WIDTH-1 || snake->y[0] <= 0 || snake->y[0] >= HEIGHT-1)
+    // Wall collision (with border)
+    if (snake->x[0] < 0 || snake->x[0] >= WIDTH || snake->y[0] < 0 || snake->y[0] >= HEIGHT)
         return 1;
+
     // Self collision
     for (int i = 1; i < snake->length; i++) {
         if (snake->x[0] == snake->x[i] && snake->y[0] == snake->y[i])
@@ -44,6 +95,7 @@ int checkCollision(Snake *snake) {
     }
     return 0;
 }
+
 
 void generateFruit(Fruit *fruit, Snake *snake) {
     int valid = 0;
